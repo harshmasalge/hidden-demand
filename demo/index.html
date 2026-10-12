@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hidden Demand Explorer</title>
+<style>
+:root{
+  --surface:#fcfcfb; --panel:#ffffff; --line:#e4e3df; --ink:#0b0b0b; --ink2:#52514e; --muted:#8a8984;
+  --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --gray:#a3a29d; --shade:#f1efe9; --accent:#2a78d6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --surface:#1a1a19; --panel:#222221; --line:#3a3a38; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8e88;
+    --blue:#3987e5; --orange:#d95926; --aqua:#199e70; --gray:#77766f; --shade:#2b2a27; --accent:#3987e5; }
+}
+:root[data-theme="dark"]{ --surface:#1a1a19; --panel:#222221; --line:#3a3a38; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8e88;
+    --blue:#3987e5; --orange:#d95926; --aqua:#199e70; --gray:#77766f; --shade:#2b2a27; --accent:#3987e5; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 24px 0;max-width:1180px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--ink2);font-size:13.5px}
+.note{display:inline-block;margin-top:8px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--ink2);font-size:12.5px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1180px;margin:16px auto 0;padding:0 24px;border-bottom:1px solid var(--line)}
+nav button{all:unset;cursor:pointer;padding:10px 14px;color:var(--ink2);border-bottom:2px solid transparent;font-weight:500}
+nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
+main{max-width:1180px;margin:0 auto;padding:20px 24px 48px}
+section{display:none} section.on{display:block}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+label{font-size:12.5px;color:var(--ink2);display:block;margin-bottom:4px}
+select,input[type=range]{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:260px}
+input[type=range]{padding:0;min-width:220px;accent-color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h3{margin:0 0 4px;font-size:15px}
+.card .hint{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.tile .v{font-size:26px;font-weight:650;letter-spacing:-.01em}
+.tile .k{color:var(--ink2);font-size:13px}
+.days{display:flex;flex-wrap:wrap;gap:4px}
+.days button{all:unset;cursor:pointer;font-size:12px;padding:4px 7px;border:1px solid var(--line);border-radius:6px;color:var(--ink2)}
+.days button.so{border-color:var(--orange)}
+.days button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.days .sep{width:1px;background:var(--line);margin:0 6px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-top:6px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--ink2);font-weight:500} th:first-child,td:first-child{text-align:left}
+.tw{overflow-x:auto}
+.reason{background:var(--shade);border-radius:8px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
+svg text{fill:var(--ink2);font-size:11px}
+.figs img{max-width:min(100%,820px);display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:12px;background:#fcfcfb}
+.tip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.12);display:none;z-index:9}
+.pill{font-size:11.5px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);color:var(--ink2)}
+@media (max-width:640px){header,main,nav{padding-left:16px;padding-right:16px} select{min-width:0;width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hidden Demand Explorer</h1>
+  <div class="sub">Estimating true fresh-produce demand in dark stores during stockouts · Team ASCI · IR&amp;P IIT Gandhinagar × Eternal</div>
+  <div class="note">Real, anonymised data from FreshRetailNet-50K (898 fresh-grocery stores, China, 2024). Store, city and product are encoded IDs; sales are in normalised units.</div>
+</header>
+<nav id="tabs">
+  <button data-t="overview" class="on">Overview</button>
+  <button data-t="explorer">Explorer</button>
+  <button data-t="orders">Orders</button>
+  <button data-t="network">Network</button>
+  <button data-t="evaluation">Evaluation</button>
+</nav>
+<main>
+<section id="overview" class="on">
+  <div class="tiles" id="ovTiles"></div>
+  <div class="card"><h3>What this prototype shows</h3>
+    <p class="hint">When an item sells out, recorded sales stop counting demand. Forecasts built on those sales order less next time, and the shelf empties earlier.</p>
+    <ul style="margin:0;padding-left:18px;color:var(--ink2);font-size:14px">
+      <li><b>Explorer</b>: one item, one day: what was recorded, when it sold out, and the demand we estimate was lost.</li>
+      <li><b>Orders</b>: tomorrow's order from recorded sales vs from recovered demand, with the reason.</li>
+      <li><b>Network</b>: which store-items hide the most demand across all 50,000 series.</li>
+      <li><b>Evaluation</b>: in a simulated store where true demand is known, how orders compare.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="explorer">
+  <div class="row">
+    <div><label for="exSeries">Store · product</label><select id="exSeries"></select></div>
+  </div>
+  <div class="card">
+    <h3>Pick a day</h3><p class="hint">Orange border = the item sold out that day. Days after the divider are the forecast week.</p>
+    <div class="days" id="exDays"></div>
+  </div>
+  <div class="tiles" id="exTiles"></div>
+  <div class="card"><h3 id="exTitle">Hourly sales</h3><p class="hint">Shaded hours: out of stock. Orange: demand we estimate was lost while sold out.</p>
+    <div id="exChart"></div>
+    <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Recorded sales</span><span><span class="sw" style="background:var(--orange)"></span>Estimated lost demand</span><span><span class="sw" style="background:var(--shade);border:1px solid var(--line)"></span>Out of stock</span></div>
+  </div>
+  <div class="card"><h3>Daily totals over three weeks</h3><p class="hint">Recorded sales vs recovered demand. Dots mark sell-out days.</p>
+    <div id="exDaily"></div>
+    <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Recorded sales</span><span><span class="sw" style="background:var(--orange)"></span>Recovered demand</span></div>
+  </div>
+</section>
+
+<section id="orders">
+  <div class="row">
+    <div><label for="orSeries">Store · product</label><select id="orSeries"></select></div>
+    <div><label for="orLevel">Service target: <b id="orLevelV">70%</b></label><input id="orLevel" type="range" min="10" max="90" step="5" value="70"></div>
+  </div>
+  <div class="reason" id="orReason"></div>
+  <div class="card"><h3>Forecast week: order per day</h3><p class="hint">Orders are the forecast quantile at the service target (newsvendor rule). "Recorded" is what sold; on sell-out days true demand was higher.</p>
+    <div id="orChart"></div>
+    <div class="legend"><span><span class="sw" style="background:var(--gray)"></span>Order from recorded sales</span><span><span class="sw" style="background:var(--blue)"></span>Order from recovered demand</span><span><span class="sw" style="background:var(--ink)"></span>Recorded sales</span></div>
+    <div class="tw" style="margin-top:10px"><table id="orTable"></table></div>
+  </div>
+</section>
+
+<section id="network">
+  <div class="tiles" id="nwTiles"></div>
+  <div class="card"><h3>How much demand each store-item hides</h3><p class="hint">Share of recovered demand that never appeared in recorded sales, across all series (90 days).</p><div id="nwHist"></div></div>
+  <div class="card"><h3>Store-items with the most hidden demand</h3><p class="hint">Top 60 by estimated hidden demand (normalised units, 90 days), at most 2 stores per product so the list is not one item.</p><div class="tw"><table id="nwTable"></table></div></div>
+</section>
+
+<section id="evaluation">
+  <div class="card"><h3>Simulated store: orders vs true demand</h3>
+    <p class="hint">Real demand patterns, a store that restocks from recorded sales, and true demand known on every day. Each point is one service target; lower-right is better. Hover for values.</p>
+    <div id="evChart"></div>
+    <div class="legend" id="evLegend"></div>
+  </div>
+  <div class="card figs"><h3>Key results</h3><p class="hint">From the reproducible pipeline (python run_all.py); images in figures/.</p>
+    <img src="../figures/fig2_recovery_error.png" alt="Recovery error by method">
+    <img src="../figures/fig3_app_signal_by_traffic.png" alt="App signal error by traffic">
+    <img src="../figures/fig5_bias_on_real_sellouts.png" alt="Bias on real sell-outs">
+    <img src="../figures/fig7_guaranteed_stockouts.png" alt="Guaranteed stockouts on sell-out days">
+    <img src="../figures/fig4_feedback_loop.png" alt="Feedback loop">
+    <img src="../figures/fig1_when_buy_vs_when_empty.png" alt="When customers buy vs when shelves are empty">
+  </div>
+</section>
+</main>
+<div class="tip" id="tip"></div>
+<script src="data.js"></script>
+<script>
+const D = window.APP_DATA;
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (x, d=2) => (x==null||isNaN(x)) ? '–' : Number(x).toFixed(d);
+const pct = x => (x==null||isNaN(x)) ? '–' : (100*x).toFixed(0)+'%';
+const tip = $('#tip');
+function showTip(e, html){ tip.innerHTML = html; tip.style.display='block'; tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY+12)+'px'; }
+function hideTip(){ tip.style.display='none'; }
+function el(tag, attrs={}, parent){ const n=document.createElementNS('http://www.w3.org/2000/svg', tag); for(const k in attrs) n.setAttribute(k, attrs[k]); if(parent) parent.appendChild(n); return n; }
+function svgBox(container, W, H){ container.innerHTML=''; const s=el('svg',{viewBox:`0 0 ${W} ${H}`, width:'100%', role:'img'}); container.appendChild(s); return s; }
+function axisY(s, x0, y0, y1, max, W, ticks=4, f=null){
+  f = f || (v => fmt(v, max < 0.5 ? 3 : max < 2 ? 2 : 1));
+  for(let i=0;i<=ticks;i++){ const v=max*i/ticks, y=y0-(y0-y1)*i/ticks;
+    el('line',{x1:x0,x2:W-10,y1:y,y2:y,stroke:css('--line'),'stroke-width':1},s);
+    const t=el('text',{x:x0-6,y:y+4,'text-anchor':'end'},s); t.textContent=f(v); }
+}
+const niceMax = v => { if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; };
+
+// tabs
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on', x===b));
+  document.querySelectorAll('section').forEach(x=>x.classList.toggle('on', x.id===b.dataset.t));
+  render();
+});
+
+// overview tiles
+(function(){
+  const h = D.headlines, t = [];
+  const g = (s,k) => (h[s]||{})[k];
+  t.push([g('s03','hidden demand on stockout days'), 'more demand than recorded on sell-out days (estimate)']);
+  t.push([g('s03','day-level error, GBM-transplanted on transplanted test'), 'error recovering lost demand from sales history (vs 35% with no recovery)']);
+  t.push([g('s04','relative error reduction vs best sales-only'), 'lower error when app signals are used (real clickstream)']);
+  t.push([g('s06','sell-out days with guaranteed stockout (median order) A -> B'), 'sell-out days where the order was below what already sold']);
+  $('#ovTiles').innerHTML = t.filter(x=>x[0]).map(([v,k])=>`<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+})();
+
+// series selectors
+const keys = Object.keys(D.series);
+const label = k => { const s=D.series[k]; return `Store ${s.store} · product ${s.product} (city ${s.city})`; };
+for(const id of ['#exSeries','#orSeries']){ $(id).innerHTML = keys.map(k=>`<option value="${k}">${label(k)}</option>`).join(''); }
+$('#exSeries').onchange = () => { exDay = null; render(); };
+$('#orSeries').onchange = render; $('#orLevel').oninput = () => { $('#orLevelV').textContent = $('#orLevel').value+'%'; render(); };
+let exDay = null;
+
+function renderExplorer(){
+  const k = $('#exSeries').value, s = D.series[k], n = s.dates.length;
+  if(exDay===null){ exDay = s.out.findIndex((o,i)=>i>=s.eval_from && o.some(Boolean)); if(exDay<0) exDay=n-1; }
+  const dd = $('#exDays'); dd.innerHTML='';
+  s.dates.forEach((d,i)=>{ if(i===s.eval_from){ const sp=document.createElement('span'); sp.className='sep'; dd.appendChild(sp); }
+    const b=document.createElement('button'); b.textContent=d.slice(5); b.className=(s.out[i].some(Boolean)?'so ':'')+(i===exDay?'on':'');
+    b.onclick=()=>{exDay=i; renderExplorer();}; dd.appendChild(b); });
+  const rec=s.recorded[exDay], out=s.out[exDay], rv=s.recovered[exDay];
+  const R=rec.reduce((a,b)=>a+b,0), V=rv.reduce((a,b)=>a+b,0), firstOut=out.indexOf(1);
+  $('#exTiles').innerHTML = [[fmt(R),'recorded sales'],[fmt(V),'recovered demand'],[V>0?pct((V-R)/V):'–','of demand not recorded'],
+    [firstOut>=0?`${firstOut+6}:00`:'in stock','sold out from']].map(([v,k])=>`<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  $('#exTitle').textContent = `Hourly sales on ${s.dates[exDay]}`;
+  const W=760,H=260,x0=44,y0=225,y1=14, bw=(W-x0-10)/16;
+  const sv=svgBox($('#exChart'),W,H), max=niceMax(Math.max(...rv,...rec,0.01));
+  out.forEach((o,i)=>{ if(o) el('rect',{x:x0+i*bw,y:y1,width:bw,height:y0-y1,fill:css('--shade')},sv); });
+  axisY(sv,x0,y0,y1,max,W);
+  for(let i=0;i<16;i++){
+    const xr=x0+i*bw+bw*0.15, w=bw*0.7, hr=(y0-y1)*rec[i]/max, hv=(y0-y1)*Math.max(rv[i]-rec[i],0)/max;
+    const g=el('g',{},sv);
+    if(hr>0) el('rect',{x:xr,y:y0-hr,width:w,height:hr,rx:3,fill:css('--blue')},g);
+    if(hv>0) el('rect',{x:xr,y:y0-hr-hv-(hr>0?2:0),width:w,height:hv,rx:3,fill:css('--orange')},g);
+    const hit=el('rect',{x:x0+i*bw,y:y1,width:bw,height:y0-y1,fill:'transparent'},g);
+    hit.onmousemove=e=>showTip(e,`<b>${i+6}:00</b><br>recorded ${fmt(rec[i],3)}<br>estimated lost ${fmt(Math.max(rv[i]-rec[i],0),3)}${out[i]?'<br>out of stock':''}`); hit.onmouseleave=hideTip;
+    const t=el('text',{x:x0+i*bw+bw/2,y:y0+16,'text-anchor':'middle'},sv); t.textContent=i+6;
+  }
+  // daily
+  const W2=760,H2=220,yb=185,yt=12, n2=n, sx=(W2-x0-20)/(n2-1);
+  const tr=s.recorded.map(a=>a.reduce((x,y)=>x+y,0)), tv=s.recovered.map(a=>a.reduce((x,y)=>x+y,0));
+  const s2=svgBox($('#exDaily'),W2,H2), m2=niceMax(Math.max(...tv,...tr,0.01)); axisY(s2,x0,yb,yt,m2,W2);
+  el('rect',{x:x0+s.eval_from*sx-sx/2,y:yt,width:W2-10-(x0+s.eval_from*sx-sx/2),height:yb-yt,fill:css('--shade')},s2);
+  const lt=el('text',{x:x0+s.eval_from*sx,y:yt+12},s2); lt.textContent='forecast week';
+  const path=(arr,c)=>el('polyline',{points:arr.map((v,i)=>`${x0+i*sx},${yb-(yb-yt)*v/m2}`).join(' '),fill:'none',stroke:c,'stroke-width':2},s2);
+  path(tv,css('--orange')); path(tr,css('--blue'));
+  tr.forEach((v,i)=>{ const so=s.out[i].some(Boolean);
+    if(so) el('circle',{cx:x0+i*sx,cy:yb-(yb-yt)*tv[i]/m2,r:4.5,fill:css('--orange'),stroke:css('--panel'),'stroke-width':2},s2);
+    const hit=el('rect',{x:x0+i*sx-sx/2,y:yt,width:sx,height:yb-yt,fill:'transparent'},s2);
+    hit.onmousemove=e=>showTip(e,`<b>${s.dates[i]}</b><br>recorded ${fmt(v)}<br>recovered ${fmt(tv[i])}${so?'<br>sold out':''}`); hit.onmouseleave=hideTip;
+    hit.onclick=()=>{exDay=i; renderExplorer();};
+    if(i%3===0){ const t=el('text',{x:x0+i*sx,y:yb+16,'text-anchor':'middle'},s2); t.textContent=s.dates[i].slice(5); } });
+}
+
+const QS=[0.1,0.25,0.5,0.75,0.9];
+function qAt(q,a){ if(a<=QS[0]) return q[0]; if(a>=QS[4]) return q[4]; for(let j=0;j<4;j++){ if(a<=QS[j+1]){ const t=(a-QS[j])/(QS[j+1]-QS[j]); return q[j]*(1-t)+q[j+1]*t; } } }
+function renderOrders(){
+  const k=$('#orSeries').value, s=D.series[k], f=s.forecast, a=$('#orLevel').value/100, r=s.reason;
+  if(!f){ $('#orReason').textContent='No forecast for this series.'; return; }
+  const oa=f.A.map(q=>qAt(q,a)), ob=f.B.map(q=>qAt(q,a));
+  const ta=oa.reduce((x,y)=>x+y,0), tb=ob.reduce((x,y)=>x+y,0);
+  $('#orReason').innerHTML = `In the 7 days before the forecast week this item sold out on <b>${r.sellout_days_last7}</b> day(s)`+
+    (r.median_sellout_hour!=null?`, typically from <b>${r.median_sellout_hour}:00</b>`:'')+`. We estimate <b>${pct(r.hidden_share_last7)}</b> of its demand went unrecorded. `+
+    `Ordering from recovered demand adds <b>${pct(tb/ta-1)}</b> over the week at a ${Math.round(a*100)}% service target.`;
+  const W=760,H=240,x0=44,y0=205,y1=12, n=f.dates.length, gw=(W-x0-10)/n;
+  const sv=svgBox($('#orChart'),W,H), max=niceMax(Math.max(...oa,...ob,...f.actual,0.01)); axisY(sv,x0,y0,y1,max,W);
+  for(let i=0;i<n;i++){
+    const bw=gw*0.3, xa=x0+i*gw+gw*0.18, xb=xa+bw+3;
+    el('rect',{x:xa,y:y0-(y0-y1)*oa[i]/max,width:bw,height:(y0-y1)*oa[i]/max,rx:3,fill:css('--gray')},sv);
+    el('rect',{x:xb,y:y0-(y0-y1)*ob[i]/max,width:bw,height:(y0-y1)*ob[i]/max,rx:3,fill:css('--blue')},sv);
+    const ya=y0-(y0-y1)*f.actual[i]/max; el('line',{x1:xa-4,x2:xb+bw+4,y1:ya,y2:ya,stroke:css('--ink'),'stroke-width':2},sv);
+    if(f.n_out[i]>0){ const t=el('text',{x:x0+i*gw+gw/2,y:y1+10,'text-anchor':'middle'},sv); t.textContent='sold out'; }
+    const t=el('text',{x:x0+i*gw+gw/2,y:y0+16,'text-anchor':'middle'},sv); t.textContent=f.dates[i].slice(5);
+    const hit=el('rect',{x:x0+i*gw,y:y1,width:gw,height:y0-y1,fill:'transparent'},sv);
+    hit.onmousemove=e=>showTip(e,`<b>${f.dates[i]}</b><br>order (recorded) ${fmt(oa[i])}<br>order (recovered) ${fmt(ob[i])}<br>recorded sales ${fmt(f.actual[i])}${f.n_out[i]>0?'<br>sold out: true demand was higher':''}`); hit.onmouseleave=hideTip;
+  }
+  $('#orTable').innerHTML = '<tr><th>Date</th><th>Order from recorded</th><th>Order from recovered</th><th>Recorded sales</th><th>Sold out?</th></tr>'+
+    f.dates.map((d,i)=>`<tr><td>${d}</td><td>${fmt(oa[i])}</td><td>${fmt(ob[i])}</td><td>${fmt(f.actual[i])}</td><td>${f.n_out[i]>0?'<span class="pill">yes</span>':'no'}</td></tr>`).join('');
+}
+
+function renderNetwork(){
+  const N=D.network;
+  $('#nwTiles').innerHTML=[[N.n_series.toLocaleString(),'store-item series'],[pct(N.total_hidden/(N.total_recorded+N.total_hidden)),'of estimated demand never recorded'],
+    [Math.round(N.total_hidden).toLocaleString(),'hidden demand (normalised units, 90 days)']].map(([v,k])=>`<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  const W=760,H=220,x0=50,y0=185,y1=12, n=N.hist.length, bw=(W-x0-10)/n, max=niceMax(Math.max(...N.hist));
+  const sv=svgBox($('#nwHist'),W,H); axisY(sv,x0,y0,y1,max,W,4,v=>Math.round(v).toLocaleString());
+  N.hist.forEach((c,i)=>{ const h=(y0-y1)*c/max; el('rect',{x:x0+i*bw+1,y:y0-h,width:bw-2,height:h,rx:2,fill:css('--orange')},sv);
+    const hit=el('rect',{x:x0+i*bw,y:y1,width:bw,height:y0-y1,fill:'transparent'},sv);
+    hit.onmousemove=e=>showTip(e,`${pct(N.edges[i])}–${pct(N.edges[i+1])} hidden<br><b>${c.toLocaleString()}</b> series`); hit.onmouseleave=hideTip;
+    if(i%4===0){ const t=el('text',{x:x0+i*bw,y:y0+16,'text-anchor':'middle'},sv); t.textContent=pct(N.edges[i]); } });
+  $('#nwTable').innerHTML='<tr><th>Store · product</th><th>City</th><th>Recorded</th><th>Hidden</th><th>Hidden share</th><th>Sell-out days</th></tr>'+
+    N.top.map(r=>`<tr><td>Store ${r.store} · product ${r.product}</td><td>${r.city}</td><td>${fmt(r.recorded,1)}</td><td>${fmt(r.hidden,1)}</td><td>${pct(r.hidden_share)}</td><td>${r.sellout_days} / 90</td></tr>`).join('');
+}
+
+function renderEval(){
+  const F=D.frontier, models=[...new Set(F.model)];
+  const col={'A: recorded sales':css('--gray'),'B: recovered (sales path)':css('--aqua'),'C: recovered (app signals)':css('--blue'),'Oracle: true demand':css('--ink')};
+  const W=760,H=330,x0=52,y0=290,y1=12, xs=F.fill_rate, ys=F.waste_pct;
+  const xmin=Math.floor(Math.min(...xs)*10)/10, xmax=Math.ceil(Math.max(...xs)*10)/10, ymax=niceMax(Math.max(...ys));
+  const X=v=>x0+(W-x0-14)*(v-xmin)/(xmax-xmin), Y=v=>y0-(y0-y1)*v/ymax;
+  const sv=svgBox($('#evChart'),W,H); axisY(sv,x0,y0,y1,ymax,W,5,v=>pct(v));
+  for(let v=xmin; v<=xmax+1e-9; v+=0.1){ const t=el('text',{x:X(v),y:y0+16,'text-anchor':'middle'},sv); t.textContent=pct(v); }
+  const xl=el('text',{x:(x0+W)/2,y:H-2,'text-anchor':'middle'},sv); xl.textContent='fill rate (share of true demand served) →';
+  const yl=el('text',{x:x0+6,y:y1+12},sv); yl.textContent='↑ waste (share of stock ordered)';
+  models.forEach(m=>{ const idx=F.model.map((x,i)=>x===m?i:-1).filter(i=>i>=0).sort((a,b)=>xs[a]-xs[b]);
+    el('polyline',{points:idx.map(i=>`${X(xs[i])},${Y(ys[i])}`).join(' '),fill:'none',stroke:col[m],'stroke-width':2,'stroke-dasharray':m.startsWith('Oracle')?'5 4':''},sv);
+    idx.forEach(i=>{ const c=el('circle',{cx:X(xs[i]),cy:Y(ys[i]),r:5,fill:col[m],stroke:css('--panel'),'stroke-width':2},sv);
+      c.onmousemove=e=>showTip(e,`<b>${m}</b><br>service target ${pct(F.critical_ratio[i])}<br>fill rate ${pct(xs[i])}<br>waste ${pct(ys[i])}`); c.onmouseleave=hideTip; }); });
+  $('#evLegend').innerHTML=models.map(m=>`<span><span class="sw" style="background:${col[m]}"></span>${m}</span>`).join('');
+}
+
+function render(){
+  const t=document.querySelector('#tabs button.on').dataset.t;
+  if(t==='explorer') renderExplorer(); if(t==='orders') renderOrders(); if(t==='network') renderNetwork(); if(t==='evaluation') renderEval();
+}
+render();
+</script>
+</body>
+</html>
