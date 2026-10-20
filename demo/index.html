@@ -4,97 +4,118 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hidden Demand Explorer</title>
+<meta name="description" content="Interactive demo: recorded sales vs recovered demand, order recommendations and hidden demand across 50,000 store-item series.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='14' width='6' height='15' rx='1.5' fill='%232a78d6'/%3E%3Crect x='13' y='6' width='6' height='23' rx='1.5' fill='%232a78d6'/%3E%3Crect x='23.5' y='10.5' width='5' height='18' rx='1.5' fill='none' stroke='%23eb6834' stroke-width='2' stroke-dasharray='3 2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../site.css">
 <style>
-:root{
-  --surface:#fcfcfb; --panel:#ffffff; --line:#e4e3df; --ink:#0b0b0b; --ink2:#52514e; --muted:#8a8984;
-  --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --gray:#a3a29d; --shade:#f1efe9; --accent:#2a78d6;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --surface:#1a1a19; --panel:#222221; --line:#3a3a38; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8e88;
-    --blue:#3987e5; --orange:#d95926; --aqua:#199e70; --gray:#77766f; --shade:#2b2a27; --accent:#3987e5; }
-}
-:root[data-theme="dark"]{ --surface:#1a1a19; --panel:#222221; --line:#3a3a38; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8e88;
-    --blue:#3987e5; --orange:#d95926; --aqua:#199e70; --gray:#77766f; --shade:#2b2a27; --accent:#3987e5; }
-*{box-sizing:border-box}
-body{margin:0;background:var(--surface);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-header{padding:20px 24px 0;max-width:1180px;margin:0 auto}
-h1{font-size:22px;margin:0 0 4px}
-.sub{color:var(--ink2);font-size:13.5px}
-.note{display:inline-block;margin-top:8px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--ink2);font-size:12.5px}
-nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1180px;margin:16px auto 0;padding:0 24px;border-bottom:1px solid var(--line)}
-nav button{all:unset;cursor:pointer;padding:10px 14px;color:var(--ink2);border-bottom:2px solid transparent;font-weight:500}
-nav button.on{color:var(--ink);border-bottom-color:var(--accent)}
-main{max-width:1180px;margin:0 auto;padding:20px 24px 48px}
-section{display:none} section.on{display:block}
-.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
-label{font-size:12.5px;color:var(--ink2);display:block;margin-bottom:4px}
-select,input[type=range]{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:260px}
-input[type=range]{padding:0;min-width:220px;accent-color:var(--accent)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
-.card h3{margin:0 0 4px;font-size:15px}
-.card .hint{color:var(--muted);font-size:12.5px;margin:0 0 10px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
-.tile .v{font-size:26px;font-weight:650;letter-spacing:-.01em}
-.tile .k{color:var(--ink2);font-size:13px}
-.days{display:flex;flex-wrap:wrap;gap:4px}
-.days button{all:unset;cursor:pointer;font-size:12px;padding:4px 7px;border:1px solid var(--line);border-radius:6px;color:var(--ink2)}
-.days button.so{border-color:var(--orange)}
-.days button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.days .sep{width:1px;background:var(--line);margin:0 6px}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-top:6px}
-.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line)}
-th{color:var(--ink2);font-weight:500} th:first-child,td:first-child{text-align:left}
+body{font-size:15px; line-height:1.5}
+.app-head{padding-top:36px}
+.app-head h1{font-size:clamp(28px,3.2vw,38px); margin:0 0 8px}
+.app-head .sub{color:var(--ink2); font-size:15.5px; max-width:52em; margin:0 0 14px}
+.datanote{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; color:var(--ink2); background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:10px 14px; max-width:60em}
+.datanote .src{flex:none}
+.tabs{display:flex; gap:2px; margin:26px 0 0; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none}
+.tabs button{all:unset; cursor:pointer; padding:12px 16px 11px; color:var(--ink2); font-weight:500; font-size:15px; border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink); border-bottom-color:var(--blue); font-weight:600}
+.tabs button:focus-visible{outline:2px solid var(--blue); outline-offset:-2px}
+main.app{padding-top:28px; padding-bottom:72px}
+main.app > section{display:none} main.app > section.on{display:block}
+.row{display:flex; gap:20px; flex-wrap:wrap; align-items:flex-end; margin-bottom:18px}
+.ctl label{font-size:13px; color:var(--ink2); display:block; margin-bottom:6px; font-weight:500}
+select{font:inherit; color:var(--ink); background:var(--panel); border:1px solid var(--line2); border-radius:8px; padding:9px 34px 9px 12px; min-width:300px; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%237c818a' stroke-width='1.6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; cursor:pointer}
+select:hover{border-color:var(--ink2)}
+input[type=range]{min-width:240px; accent-color:var(--blue); cursor:pointer}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); padding:22px 22px 18px; margin-bottom:18px}
+.card h3{margin:0 0 4px; font-size:16.5px}
+.card .hint{color:var(--muted); font-size:13.5px; margin:0 0 14px; max-width:60em}
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0; margin:0 0 18px; background:var(--panel); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden}
+.tile{padding:18px 20px; border-right:1px solid var(--line)}
+.tile:last-child{border-right:0}
+.tile .v{font-family:var(--serif); font-size:30px; line-height:1.1; font-weight:600; letter-spacing:-.01em; font-variant-numeric:tabular-nums}
+.tile .k{color:var(--ink2); font-size:13.5px; margin-top:4px; line-height:1.4}
+.days{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.days button{all:unset; cursor:pointer; font-size:12.5px; font-variant-numeric:tabular-nums; padding:5px 8px; border:1px solid var(--line); border-radius:6px; color:var(--ink2); background:var(--paper)}
+.days button:hover{border-color:var(--ink2); color:var(--ink)}
+.days button.so{border-color:var(--orange); box-shadow:inset 0 -2px 0 var(--orange)}
+.days button.on{background:var(--ink); border-color:var(--ink); color:var(--paper); box-shadow:none}
+.days button:focus-visible{outline:2px solid var(--blue); outline-offset:1px}
+.days .sep{width:1px; align-self:stretch; background:var(--line2); margin:0 8px}
+.legend{margin-top:8px}
+table{width:100%; border-collapse:collapse; font-size:14px; font-variant-numeric:tabular-nums}
+th,td{text-align:right; padding:9px 10px; border-bottom:1px solid var(--line)}
+th{color:var(--muted); font-weight:500; font-size:13px; border-bottom-color:var(--line2)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td, table tr:hover td{background:var(--alt)}
 .tw{overflow-x:auto}
-.reason{background:var(--shade);border-radius:8px;padding:10px 12px;font-size:13.5px;margin-bottom:12px}
-svg text{fill:var(--ink2);font-size:11px}
-.figs img{max-width:min(100%,820px);display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:12px;background:#fcfcfb}
-.tip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12.5px;box-shadow:0 4px 14px rgba(0,0,0,.12);display:none;z-index:9}
-.pill{font-size:11.5px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);color:var(--ink2)}
-@media (max-width:640px){header,main,nav{padding-left:16px;padding-right:16px} select{min-width:0;width:100%}}
+.reason{background:var(--blue-soft); color:var(--ink); border-radius:var(--r); padding:14px 16px; font-size:14.5px; margin-bottom:18px; border-left:3px solid var(--blue)}
+svg text{fill:var(--muted); font:11px var(--sans)}
+.figs img{max-width:min(100%,860px); display:block; background:var(--figbg); border:1px solid var(--line); border-radius:var(--r); padding:10px; margin-bottom:14px}
+.tip{position:fixed; pointer-events:none; background:var(--ink); color:var(--paper); border-radius:8px; padding:8px 10px; font-size:12.5px; line-height:1.45; box-shadow:0 8px 24px rgba(0,0,0,.18); display:none; z-index:30}
+.tip b{color:var(--paper)}
+.pill{font-size:12px; border-radius:999px; padding:2px 9px; background:var(--orange-soft); color:var(--orange); font-weight:600}
+.guide{list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px}
+.guide li{border:1px solid var(--line); border-radius:var(--r); padding:14px 16px; background:var(--paper)}
+.guide button{all:unset; cursor:pointer; font-weight:600; color:var(--blue-ink)}
+.guide button:hover{text-decoration:underline}
+.guide p{margin:4px 0 0; color:var(--ink2); font-size:14px}
+@media (max-width:640px){ .tiles{grid-template-columns:1fr 1fr} .tile .v{font-size:24px} .tile{padding:14px 16px} select{min-width:0; width:100%} .row > div{width:100%} input[type=range]{width:100%} .tile{border-right:0; border-bottom:1px solid var(--line)} .card{padding:16px 14px} .datanote{flex-direction:column} }
 </style>
 </head>
 <body>
-<header>
-  <h1>Hidden Demand Explorer</h1>
-  <div class="sub">Estimating true fresh-produce demand in dark stores during stockouts · Team ASCI · IR&amp;P IIT Gandhinagar × Eternal</div>
-  <div class="note">Real, anonymised data from FreshRetailNet-50K (898 fresh-grocery stores, China, 2024). Store, city and product are encoded IDs; sales are in normalised units.</div>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="brand" href="../" aria-label="Hidden Demand, overview">
+      <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><rect x="3" y="14" width="6" height="15" rx="1.5" fill="var(--blue)"/><rect x="13" y="6" width="6" height="23" rx="1.5" fill="var(--blue)"/><rect x="23.5" y="10.5" width="5" height="18" rx="1.5" fill="none" stroke="var(--orange)" stroke-width="2" stroke-dasharray="3 2"/></svg>
+      Hidden Demand
+    </a>
+    <nav class="links" aria-label="Site"><a href="../#method">Method</a><a href="../#results">Results</a><a href="../#data">Data</a></nav>
+    <a class="btn btn-sm btn-ghost" href="../">Back to overview</a>
+  </div>
 </header>
-<nav id="tabs">
-  <button data-t="overview" class="on">Overview</button>
-  <button data-t="explorer">Explorer</button>
-  <button data-t="orders">Orders</button>
-  <button data-t="network">Network</button>
-  <button data-t="evaluation">Evaluation</button>
-</nav>
-<main>
+<div class="wrap app-head">
+  <h1>Hidden Demand Explorer</h1>
+  <p class="sub">Pick a store and item to see what sales recorded, when the shelf went empty, and the demand we estimate was lost, then compare tomorrow&rsquo;s order both ways.</p>
+  <div class="datanote"><span class="src src-real">Real data</span><span>FreshRetailNet-50K: 898 fresh-grocery stores, 2024. Store, city and product are encoded IDs; sales are in normalised units.</span></div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Views">
+    <button role="tab" data-t="overview" class="on">Overview</button>
+    <button role="tab" data-t="explorer">One item, one day</button>
+    <button role="tab" data-t="orders">Orders</button>
+    <button role="tab" data-t="network">All stores</button>
+    <button role="tab" data-t="evaluation">Evaluation</button>
+  </nav>
+</div>
+<main id="main" class="wrap app">
 <section id="overview" class="on">
   <div class="tiles" id="ovTiles"></div>
-  <div class="card"><h3>What this prototype shows</h3>
+  <div class="card"><h3>What you can do here</h3>
     <p class="hint">When an item sells out, recorded sales stop counting demand. Forecasts built on those sales order less next time, and the shelf empties earlier.</p>
-    <ul style="margin:0;padding-left:18px;color:var(--ink2);font-size:14px">
-      <li><b>Explorer</b>: one item, one day: what was recorded, when it sold out, and the demand we estimate was lost.</li>
-      <li><b>Orders</b>: tomorrow's order from recorded sales vs from recovered demand, with the reason.</li>
-      <li><b>Network</b>: which store-items hide the most demand across all 50,000 series.</li>
-      <li><b>Evaluation</b>: in a simulated store where true demand is known, how orders compare.</li>
+    <ul class="guide">
+      <li><button data-go="explorer">One item, one day</button><p>What was recorded, when it sold out, and the demand we estimate was lost.</p></li>
+      <li><button data-go="orders">Orders</button><p>Tomorrow&rsquo;s order from recorded sales vs from recovered demand, with the reason.</p></li>
+      <li><button data-go="network">All stores</button><p>Which store-items hide the most demand across all 50,000 series.</p></li>
+      <li><button data-go="evaluation">Evaluation</button><p>In a simulated store where true demand is known, how orders compare.</p></li>
     </ul>
   </div>
 </section>
 
 <section id="explorer">
   <div class="row">
-    <div><label for="exSeries">Store · product</label><select id="exSeries"></select></div>
+    <div class="ctl"><label for="exSeries">Store and product</label><select id="exSeries"></select></div>
   </div>
   <div class="card">
-    <h3>Pick a day</h3><p class="hint">Orange border = the item sold out that day. Days after the divider are the forecast week.</p>
+    <h3>Pick a day</h3><p class="hint">Days underlined in orange sold out. Days after the divider are the forecast week.</p>
     <div class="days" id="exDays"></div>
   </div>
   <div class="tiles" id="exTiles"></div>
   <div class="card"><h3 id="exTitle">Hourly sales</h3><p class="hint">Shaded hours: out of stock. Orange: demand we estimate was lost while sold out.</p>
     <div id="exChart"></div>
-    <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Recorded sales</span><span><span class="sw" style="background:var(--orange)"></span>Estimated lost demand</span><span><span class="sw" style="background:var(--shade);border:1px solid var(--line)"></span>Out of stock</span></div>
+    <div class="legend"><span><span class="sw" style="background:var(--blue)"></span>Recorded sales</span><span><span class="sw" style="background:var(--orange)"></span>Estimated lost demand</span><span><span class="sw sw-shade"></span>Out of stock</span></div>
   </div>
   <div class="card"><h3>Daily totals over three weeks</h3><p class="hint">Recorded sales vs recovered demand. Dots mark sell-out days.</p>
     <div id="exDaily"></div>
@@ -104,8 +125,8 @@ svg text{fill:var(--ink2);font-size:11px}
 
 <section id="orders">
   <div class="row">
-    <div><label for="orSeries">Store · product</label><select id="orSeries"></select></div>
-    <div><label for="orLevel">Service target: <b id="orLevelV">70%</b></label><input id="orLevel" type="range" min="10" max="90" step="5" value="70"></div>
+    <div class="ctl"><label for="orSeries">Store and product</label><select id="orSeries"></select></div>
+    <div class="ctl"><label for="orLevel">Service target: <b id="orLevelV">70%</b></label><input id="orLevel" type="range" min="10" max="90" step="5" value="70"></div>
   </div>
   <div class="reason" id="orReason"></div>
   <div class="card"><h3>Forecast week: order per day</h3><p class="hint">Orders are the forecast quantile at the service target (newsvendor rule). "Recorded" is what sold; on sell-out days true demand was higher.</p>
@@ -122,7 +143,7 @@ svg text{fill:var(--ink2);font-size:11px}
 </section>
 
 <section id="evaluation">
-  <div class="card"><h3>Simulated store: orders vs true demand</h3>
+  <div class="card"><h3>Simulated store: orders vs true demand <span class="src src-sim" style="margin-left:6px;vertical-align:2px">Simulated</span></h3>
     <p class="hint">Real demand patterns, a store that restocks from recorded sales, and true demand known on every day. Each point is one service target; lower-right is better. Hover for values.</p>
     <div id="evChart"></div>
     <div class="legend" id="evLegend"></div>
@@ -159,11 +180,14 @@ function axisY(s, x0, y0, y1, max, W, ticks=4, f=null){
 const niceMax = v => { if(v<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p; };
 
 // tabs
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on', x===b));
-  document.querySelectorAll('section').forEach(x=>x.classList.toggle('on', x.id===b.dataset.t));
+function goTab(t){
+  document.querySelectorAll('#tabs button').forEach(x=>{ const on=x.dataset.t===t; x.classList.toggle('on', on); x.setAttribute('aria-selected', on); });
+  document.querySelectorAll('main.app > section').forEach(x=>x.classList.toggle('on', x.id===t));
+  try{ history.replaceState(null,'','#view-'+t); }catch(e){}
   render();
-});
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => goTab(b.dataset.t));
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { goTab(b.dataset.go); window.scrollTo({top:0}); });
 
 // overview tiles
 (function(){
@@ -173,7 +197,8 @@ document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
   t.push([g('s03','day-level error, GBM-transplanted on transplanted test'), 'error recovering lost demand from sales history (vs 35% with no recovery)']);
   t.push([g('s04','relative error reduction vs best sales-only'), 'lower error when app signals are used (real clickstream)']);
   t.push([g('s06','sell-out days with guaranteed stockout (median order) A -> B'), 'sell-out days where the order was below what already sold']);
-  $('#ovTiles').innerHTML = t.filter(x=>x[0]).map(([v,k])=>`<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  const tidy = v => String(v).replace(/\s*\+-\s*/g,' ± ').replace(/\s*->\s*/g,' to ');
+  $('#ovTiles').innerHTML = t.filter(x=>x[0]).map(([v,k])=>[tidy(v),k]).map(([v,k])=>`<div class="tile"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
 })();
 
 // series selectors
@@ -283,10 +308,12 @@ function renderEval(){
 }
 
 function render(){
+  if(!document.querySelector('#tabs button.on')) return;
   const t=document.querySelector('#tabs button.on').dataset.t;
   if(t==='explorer') renderExplorer(); if(t==='orders') renderOrders(); if(t==='network') renderNetwork(); if(t==='evaluation') renderEval();
 }
-render();
+const startTab=(location.hash||'').replace(/^#(view-)?/,'');
+if(['overview','explorer','orders','network','evaluation'].includes(startTab)){ goTab(startTab); window.scrollTo(0,0); } else render();
 </script>
 </body>
 </html>
